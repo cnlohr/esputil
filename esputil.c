@@ -534,7 +534,8 @@ static int cmd(struct ctx *ctx, uint8_t op, void *buf, uint16_t len,
   slip_send(tmp, 8 + len, uart_tx, &ctx->fd);        // Send command
   if (ctx->verbose) dump(cmdstr(op), tmp, 8 + len);  // Hexdump if required
 
-  for (;;) {
+  int slip_tries;
+  for (slip_tries = 0; slip_tries < 10; slip_tries++) {
     int i, n, ready, eofs, ecode;
     ready = iowait(ctx->fd, ctx->sock, timeout_ms);  // Wait for data
     if (!(ready & READY_SERIAL)) return 1;           // Interrupted, fail
