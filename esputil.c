@@ -1012,7 +1012,9 @@ static int mkbin(const char *elf_path, const char *bin_path, struct ctx *ctx) {
   common_hdr[1] = num_segments;
   fwrite(common_hdr, 1, sizeof(common_hdr), bin_fp);      // Common header
   fwrite(&entrypoint, 1, sizeof(entrypoint), bin_fp);     // Entry point
-  fwrite(extended_hdr, 1, sizeof(extended_hdr), bin_fp);  // Extended header
+  if (ctx->chip.id != CHIP_ID_ESP8266) {
+    fwrite(extended_hdr, 1, sizeof(extended_hdr), bin_fp);  // Extended header
+  }
   if (ctx->verbose)
     printf("%s: %d segments found\n", elf_path, (int) num_segments);
 
