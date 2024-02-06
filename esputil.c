@@ -219,6 +219,7 @@ static void usage(struct ctx *ctx) {
   printf("  esputil [-v] [-b BAUD] [-p PORT] [-fp FLASH_PARAMS] ");
   printf("[-fspi FLASH_SPI] flash FILE.HEX\n");
   printf("  esputil [-v] [-chip detect] mkbin FIRMWARE.ELF FIRMWARE.BIN\n");
+  printf("  esputil [-v] [-chip detect] mkbinnoext FIRMWARE.ELF FIRMWARE.BIN\n");
   printf("  esputil mkhex ADDRESS1 BINFILE1 ADDRESS2 BINFILE2 ...\n");
   printf("  esputil [-tmp TMP_DIR] unhex HEXFILE\n");
   exit(EXIT_FAILURE);
@@ -1090,7 +1091,8 @@ static struct Elf32_Phdr elf_get_phdr(const struct mem *elf, int no) {
   return h[no];
 }
 
-static int mkbin(const char *elf_path, const char *bin_path, struct ctx *ctx) {
+static int mkbin(const char *elf_path, const char *bin_path, struct ctx *ctx,
+  int include_extended) {
   struct mem elf = read_entire_file(elf_path);
   FILE *bin_fp = fopen(bin_path, "w+b");
   uint8_t common_hdr[] = {0xe9, 1, 0, 0};
@@ -1116,7 +1118,7 @@ static int mkbin(const char *elf_path, const char *bin_path, struct ctx *ctx) {
   common_hdr[1] = num_segments;
   fwrite(common_hdr, 1, sizeof(common_hdr), bin_fp);      // Common header
   fwrite(&entrypoint, 1, sizeof(entrypoint), bin_fp);     // Entry point
-  if (ctx->chip.id != CHIP_ID_ESP8266) {
+  if (include_extended) {
     fwrite(extended_hdr, 1, sizeof(extended_hdr), bin_fp);  // Extended header
   }
   if (ctx->verbose)
@@ -1255,7 +1257,10 @@ int main(int argc, const char **argv) {
   // Commands that do not require serial port
   if (strcmp(*command, "mkbin") == 0) {
     if (!command[1] || !command[2]) usage(&ctx);
-    return mkbin(command[1], command[2], &ctx);
+    return mkbin(command[1], command[2], &ctx, 1);
+  } else if (strcmp(*command, "mkbinnoext") == 0) {
+    if (!command[1] || !command[2]) usage(&ctx);
+    return mkbin(command[1], command[2], &ctx, 0);
   } else if (strcmp(*command, "mkhex") == 0) {
     return mkhex(&command[1]);
   } else if (strcmp(*command, "unhex") == 0) {
